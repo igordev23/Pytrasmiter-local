@@ -25,11 +25,11 @@ def capturar_tela():
             try:
                 img = np.array(sct.grab(monitor))
                 mouse_x, mouse_y = pyautogui.position()
-                cv2.circle(img, (mouse_x, mouse_y), 10, (0, 0, 255), -1)
+                cv2.circle(img, (mouse_x, mouse_y), 5, (0, 0, 0), -1)
                 _, buffer = cv2.imencode('.jpg', img)
                 with frame_lock:
                     ultimo_frame = buffer.tobytes()
-                time.sleep(0.033)
+                time.sleep(1/60)
             except Exception as e:
                 print(f"Erro na captura: {e}")
                 break
@@ -90,7 +90,7 @@ def get_local_ip():
 if __name__ == '__main__':
     ip_local = get_local_ip()
     print(f"\nServidor iniciado! Acesse pelo navegador:\n")
-    print(f"Visualização: http://{ip_local}:5000/")
-    print(f"Transmissor:  http://{ip_local}:5000/transmitter\n")
+    print(f"Visualização: http://{ip_local}:80/")
+    print(f"Transmissor:  http://{ip_local}:80/transmitter\n")
 
-    app.run(host='0.0.0.0', port=5000, threaded=True)
+    app.run(host='0.0.0.0', port=80, threaded=True)

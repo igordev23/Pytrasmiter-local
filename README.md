@@ -1,6 +1,6 @@
 # Screen Streamer com Flask, OpenCV e MSS
 
-Este projeto transmite a tela do computador em tempo real via navegador, utilizando `Flask`, `OpenCV`, `mss` e `pyautogui`. Um círculo vermelho é desenhado sobre a posição atual do cursor do mouse, facilitando a visualização em apresentações ou demonstrações remotas.
+Este projeto transmite a tela do computador em tempo real via navegador, utilizando `Flask`, `OpenCV`, `mss` e `pyautogui`. Um círculo preto é desenhado sobre a posição atual do cursor do mouse, facilitando a visualização em apresentações ou demonstrações remotas.
 
 ## Funcionalidades
 

@@ -1,11 +1,13 @@
+# app.py
 import cv2
 import numpy as np
-from flask import Flask, Response, render_template
-import mss
-import socket
 import threading
 import time
+import socket
+import mss
 import pyautogui
+from flask import Flask, Response, render_template, request
+from gui import iniciar_interface
 
 app = Flask(__name__)
 
@@ -13,23 +15,22 @@ frame_lock = threading.Lock()
 ultimo_frame = None
 capturando = False
 thread_captura = None
-
-# Adiciona um controle para encerrar o loop com segurança
 encerrar_event = threading.Event()
+fps_atual = 60  # Valor padrão de FPS
 
 def capturar_tela():
-    global ultimo_frame
+    global ultimo_frame, fps_atual
     with mss.mss() as sct:
         monitor = sct.monitors[1]
         while not encerrar_event.is_set():
             try:
                 img = np.array(sct.grab(monitor))
                 mouse_x, mouse_y = pyautogui.position()
-                cv2.circle(img, (mouse_x, mouse_y), 5, (0, 0, 0), -1)
+                cv2.circle(img, (mouse_x, mouse_y), 5, (0, 0, 255), -1)
                 _, buffer = cv2.imencode('.jpg', img)
                 with frame_lock:
                     ultimo_frame = buffer.tobytes()
-                time.sleep(1/60)
+                time.sleep(1 / fps_atual)
             except Exception as e:
                 print(f"Erro na captura: {e}")
                 break
@@ -37,10 +38,6 @@ def capturar_tela():
 @app.route('/')
 def index():
     return render_template('index.html')
-
-@app.route('/transmitter')
-def transmitter():
-    return render_template('transmitter.html')
 
 @app.route('/start')
 def start():
@@ -63,7 +60,23 @@ def stop():
 
 @app.route('/status')
 def status():
-    return {'capturing': capturando}
+    return {
+        'capturing': capturando,
+        'fps': fps_atual
+    }
+
+@app.route('/set_fps')
+def set_fps():
+    global fps_atual
+    try:
+        novo_fps = int(request.args.get('value'))
+        if novo_fps in [30, 40, 50, 60]:
+            fps_atual = novo_fps
+            return f"FPS ajustado para {fps_atual}"
+        else:
+            return "FPS inválido", 400
+    except:
+        return "Erro ao ajustar FPS", 400
 
 @app.route('/stream')
 def stream():
@@ -74,7 +87,7 @@ def stream():
             if frame:
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            time.sleep(0.033)
+            time.sleep(0.033)  # Isso é fixo para envio da imagem, não precisa ser alterado
     return Response(gerar(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 def get_local_ip():
@@ -89,8 +102,12 @@ def get_local_ip():
 
 if __name__ == '__main__':
     ip_local = get_local_ip()
-    print(f"\nServidor iniciado! Acesse pelo navegador:\n")
-    print(f"Visualização: http://{ip_local}:80/")
-    print(f"Transmissor:  http://{ip_local}:80/transmitter\n")
 
-    app.run(host='0.0.0.0', port=80, threaded=True)
+    flask_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=80, threaded=True, use_reloader=False))
+    flask_thread.daemon = True
+    flask_thread.start()
+
+    print(f"\nServidor iniciado! Acesse pelo navegador:\n")
+    print(f"Visualização: http://{ip_local}:80/\n")
+
+    iniciar_interface(ip_local)

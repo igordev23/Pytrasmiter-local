@@ -97,4 +97,72 @@ Ou alterar a porta para uma acima de 1024 no arquivo app.py:
 app.run(host='0.0.0.0', port=8080)
 ```
 
+
+
 (Substitua app.py pelo nome do seu script principal, se for diferente.)
+
+
+## 🔧 Gerando Executável com PyInstaller
+
+Este projeto pode ser empacotado como um executável para **Windows, Linux e macOS** usando o [PyInstaller](https://pyinstaller.org/).
+
+---
+
+### ✅ Pré-requisitos
+
+Instale o PyInstaller:
+
+```bash
+pip install pyinstaller
+```
+### ⚠️ Requisitos Específicos por Sistema
+
+#### 🪟 Windows
+Nenhum requisito adicional além do Python instalado corretamente no PATH.
+
+Use ; como separador no parâmetro --add-data.
+
+#### 🐧 Linux
+É recomendado instalar os seguintes pacotes:
+
+```bash
+sudo apt install build-essential python3-dev
+```
+
+#### 🍎 macOS
+Necessário instalar as ferramentas de linha de comando do Xcode, se ainda não estiverem instaladas:
+
+```bash
+xcode-select --install
+```
+
+Isso é necessário para compilar alguns binários e permitir que o PyInstaller funcione corretamente.
+
+### 🚀 Gerar Executável
+Use o comando abaixo para empacotar o projeto com interface gráfica (--windowed) e incluir a pasta templates/:
+
+```bash
+pyinstaller --onefile --windowed --add-data "templates:templates" app.py
+
+```
+🔄 No Windows, troque : por ;:
+
+```bash
+pyinstaller --onefile --windowed --add-data "templates;templates" app.py
+
+```
+### 📦 Arquivo gerado
+Após a execução, o executável será gerado na pasta dist/:
+
+```bash
+dist/
+└── app.exe  (Windows)
+└── app      (Linux/macOS)
+```
+
+## 📝 Observações
+Mesmo com --onefile, o PyInstaller extrai arquivos temporários no tempo de execução, então o uso de caminhos relativos (como templates/) ainda funciona.
+
+Se seu programa estiver travando no macOS por segurança, vá em:
+Preferências do Sistema > Segurança e Privacidade > Aba Geral
+e clique em “Permitir” para o app bloqueado.

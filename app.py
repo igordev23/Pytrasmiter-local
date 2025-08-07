@@ -25,8 +25,10 @@ def capturar_tela():
         while not encerrar_event.is_set():
             try:
                 img = np.array(sct.grab(monitor))
+                 # Adiciona borda branca de 10 pixels em todos os lados
+               
                 mouse_x, mouse_y = pyautogui.position()
-                cv2.circle(img, (mouse_x, mouse_y), 5, (0, 0, 255), -1)
+                cv2.circle(img, (mouse_x, mouse_y), 5, (0, 0, 0), -1)
                 _, buffer = cv2.imencode('.jpg', img)
                 with frame_lock:
                     ultimo_frame = buffer.tobytes()

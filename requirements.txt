@@ -4,3 +4,5 @@ flask
 mss
 pyautogui
 requests
+pyinstaller
+pyperclip

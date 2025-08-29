@@ -37,7 +37,7 @@ def iniciar_interface(ip_local):
         try:
             r = requests.get(f"http://{ip_local}:80/status").json()
             if r['capturing']:
-                status_var.set(f"🟢 Transmissão Ativa ({r['fps']} FPS)")
+                status_var.set(f"🟢 Transmissão Ativa ({r['fps']} FPS) - 👥 {r['viewers']} conectados")
                 status_label.config(fg="green")
                 start_btn.config(state="disabled")
                 stop_btn.config(state="normal")
@@ -51,6 +51,10 @@ def iniciar_interface(ip_local):
             status_label.config(fg="orange")
             start_btn.config(state="disabled")
             stop_btn.config(state="disabled")
+        
+        
+        janela.after(2000, atualizar_status)
+
 
     def alterar_fps(event):
         novo_fps = int(fps_var.get())

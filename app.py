@@ -8,8 +8,11 @@ import mss
 import pyautogui
 from flask import Flask, Response, render_template, request
 from gui import iniciar_interface
+from viewers import bp_viewers, get_viewers_count
+
 
 app = Flask(__name__)
+app.register_blueprint(bp_viewers)
 
 frame_lock = threading.Lock()
 ultimo_frame = None
@@ -18,6 +21,9 @@ thread_captura = None
 encerrar_event = threading.Event()
 fps_atual = 60  # Valor padrão de FPS
 
+clientes_conectados = 0  # NOVO contador global
+
+
 def capturar_tela():
     global ultimo_frame, fps_atual
     with mss.mss() as sct:
@@ -25,31 +31,43 @@ def capturar_tela():
         while not encerrar_event.is_set():
             try:
                 img = np.array(sct.grab(monitor))
-                 # Adiciona borda branca de 10 pixels em todos os lados
-               
+
+                # Mostra mouse
                 mouse_x, mouse_y = pyautogui.position()
                 cv2.circle(img, (mouse_x, mouse_y), 5, (0, 0, 0), -1)
+
                 _, buffer = cv2.imencode('.jpg', img)
                 with frame_lock:
                     ultimo_frame = buffer.tobytes()
+
                 time.sleep(1 / fps_atual)
             except Exception as e:
                 print(f"Erro na captura: {e}")
                 break
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
+def reset_transmissao():
+    global clientes_conectados, ultimo_frame, capturando
+    encerrar_event.set()  # encerra qualquer captura em andamento
+    capturando = False
+    clientes_conectados = 0
+    ultimo_frame = None
+    encerrar_event.clear()
+    print("Transmissão resetada.")
+
 @app.route('/start')
 def start():
     global capturando, thread_captura
-    if not capturando:
-        encerrar_event.clear()
-        capturando = True
-        thread_captura = threading.Thread(target=capturar_tela)
-        thread_captura.daemon = True
-        thread_captura.start()
+    reset_transmissao()  # limpa estado antigo antes de iniciar
+    capturando = True
+    thread_captura = threading.Thread(target=capturar_tela)
+    thread_captura.daemon = True
+    thread_captura.start()
+    print("Transmissão iniciada.")
     return 'Transmissão iniciada.'
 
 @app.route('/stop')
@@ -58,14 +76,33 @@ def stop():
     if capturando:
         encerrar_event.set()
         capturando = False
+        print("Transmissão parada.")
     return 'Transmissão parada.'
+
 
 @app.route('/status')
 def status():
     return {
         'capturing': capturando,
-        'fps': fps_atual
+        'fps': fps_atual,
+        'viewers': clientes_conectados
     }
+
+@app.route('/viewer_on')
+def viewer_on():
+    global clientes_conectados
+    clientes_conectados += 1
+    print(f"Viewer ativo. Total: {clientes_conectados}")
+    return "ok"
+
+@app.route('/viewer_off')
+def viewer_off():
+    global clientes_conectados
+    if clientes_conectados > 0:
+        clientes_conectados -= 1
+    print(f"Viewer inativo. Total: {clientes_conectados}")
+    return "ok"
+
 
 @app.route('/set_fps')
 def set_fps():
@@ -80,17 +117,30 @@ def set_fps():
     except:
         return "Erro ao ajustar FPS", 400
 
+
 @app.route('/stream')
 def stream():
+    global clientes_conectados
+
     def gerar():
-        while not encerrar_event.is_set():
-            with frame_lock:
-                frame = ultimo_frame
-            if frame:
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            time.sleep(0.033)  # Isso é fixo para envio da imagem, não precisa ser alterado
+        global clientes_conectados
+        clientes_conectados += 1  # entrou um cliente
+        print(f"Cliente conectado. Total: {clientes_conectados}")
+
+        try:
+            while not encerrar_event.is_set():
+                with frame_lock:
+                    frame = ultimo_frame
+                if frame:
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                time.sleep(0.033)
+        finally:
+            clientes_conectados -= 1  # cliente saiu
+            print(f"Cliente desconectado. Total: {clientes_conectados}")
+
     return Response(gerar(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
 
 def get_local_ip():
     try:
@@ -102,10 +152,12 @@ def get_local_ip():
         ip = "127.0.0.1"
     return ip
 
+
 if __name__ == '__main__':
     ip_local = get_local_ip()
 
-    flask_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=80, threaded=True, use_reloader=False))
+    flask_thread = threading.Thread(
+        target=lambda: app.run(host='0.0.0.0', port=80, threaded=True, use_reloader=False))
     flask_thread.daemon = True
     flask_thread.start()
 

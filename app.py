@@ -88,20 +88,6 @@ def status():
         'viewers': clientes_conectados
     }
 
-@app.route('/viewer_on')
-def viewer_on():
-    global clientes_conectados
-    clientes_conectados += 1
-    print(f"Viewer ativo. Total: {clientes_conectados}")
-    return "ok"
-
-@app.route('/viewer_off')
-def viewer_off():
-    global clientes_conectados
-    if clientes_conectados > 0:
-        clientes_conectados -= 1
-    print(f"Viewer inativo. Total: {clientes_conectados}")
-    return "ok"
 
 
 @app.route('/set_fps')
@@ -135,8 +121,11 @@ def stream():
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
                 time.sleep(0.033)
+        except GeneratorExit:
+            # Cliente desconectou
+            pass
         finally:
-            clientes_conectados -= 1  # cliente saiu
+            clientes_conectados = max(0, clientes_conectados - 1)
             print(f"Cliente desconectado. Total: {clientes_conectados}")
 
     return Response(gerar(), mimetype='multipart/x-mixed-replace; boundary=frame')

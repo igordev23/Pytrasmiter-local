@@ -21,33 +21,6 @@
 </head>
 <body>
   <img src="/stream" />
-  <script>
-window.addEventListener("load", () => {
-    fetch("/register_viewer", {method: "POST"});
-});
 
-window.addEventListener("beforeunload", () => {
-    navigator.sendBeacon("/unregister_viewer");
-});
-
-
-document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-        fetch("/viewer_on");
-    } else {
-        fetch("/viewer_off");
-    }
-});
-
-// Quando sair da página/fechar aba, também remove
-window.addEventListener("beforeunload", () => {
-    navigator.sendBeacon("/viewer_off");
-});
-setInterval(() => {
-    if (document.visibilityState === "visible") {
-        fetch("/viewer_on");
-    }
-}, 2000);
-</script>
 </body>
 </html>

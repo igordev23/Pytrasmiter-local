@@ -142,6 +142,11 @@ def get_local_ip():
     return ip
 
 
+@app.route('/ip')
+def get_ip_route():
+    return {"ip": get_local_ip()}
+
+
 if __name__ == '__main__':
     ip_local = get_local_ip()
 

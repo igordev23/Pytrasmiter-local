@@ -6,3 +6,4 @@ pyautogui
 requests
 pyinstaller
 pyperclip
+ttkbootstrap
